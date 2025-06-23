@@ -35,31 +35,29 @@ pipeline {
         expression { params.ENVIRONMENT == 'prod' }
       }
       steps {
-        script {
-          // Retrieve Teams webhook URL stored as Jenkins secret text credential
-          def teamsWebhookUrl = credentials('teams-webhook-url')
+script {
+  def teamsWebhookUrl = credentials('teams-webhook-url')
 
-          // Compose the Teams message card payload as a Groovy map
-          def message = [
-            '@type'      : 'MessageCard',
-            '@context'   : 'http://schema.org/extensions',
-            'summary'    : 'Deployment Approval Required',
-            'themeColor' : '0076D7',
-            'title'      : "Approval Needed for PROD Deployment",
-            'text'       : "Please review and approve the Jenkins pipeline: ${env.BUILD_URL}"
-          ]
+  def message = [
+    '@type': 'MessageCard',
+    '@context': 'http://schema.org/extensions',
+    'summary': 'Deployment Approval Required',
+    'themeColor': '0076D7',
+    'title': "Approval Needed for PROD Deployment",
+    'text': "Please review and approve the Jenkins pipeline: ${env.BUILD_URL}"
+  ]
 
-          // Convert the map to a JSON string
-          def payload = groovy.json.JsonOutput.toJson(message)
+  def payload = groovy.json.JsonOutput.toJson(message)
 
-          // Write JSON payload to a file to avoid shell quoting issues
-          writeFile file: 'teams_payload.json', text: payload
+  // Write JSON to a file
+  writeFile file: 'teams_payload.json', text: payload
 
-          // Send the notification to Teams using curl with the payload file
-          sh """
-            curl -H 'Content-Type: application/json' --data @teams_payload.json ${teamsWebhookUrl}
-          """
-        }
+  // Use curl to send the file contents
+  sh """
+    curl -H 'Content-Type: application/json' --data @teams_payload.json ${teamsWebhookUrl}
+  """
+}
+
       }
     }
 
