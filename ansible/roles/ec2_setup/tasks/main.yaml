@@ -64,22 +64,31 @@
     docker pull {{ item.image }}
   loop: "{{ docker_images }}"
 
-- name: Stop and remove existing container if present
-  shell: |
-    if docker ps -a --format '{{.Names}}' | grep -w {{ item.container_name }}; then
-      docker rm -f {{ item.container_name }}
-      echo "removed"
-    else
-      echo "not found"
-    fi
-  register: container_remove_result
-  changed_when: "'removed' in container_remove_result.stdout"
+- name: Remove existing container if present
+  community.docker.docker_container:
+    name: "{{ item.container_name }}"
+    state: absent
   loop: "{{ docker_images }}"
+
 
 
 - name: Run Docker containers conditionally based on inventory hostname
   shell: |
     docker run -d --name {{ item.container_name }} -p {{ item.port }} {{ item.image }}
+  when: >
+    (inventory_hostname == groups['ec2_instances'][0] and item.container_name == 'container1') or
+    (inventory_hostname == groups['ec2_instances'][1] and item.container_name == 'container2')
+  loop: "{{ docker_images }}"
+
+
+- name: Ensure Docker containers are running with latest image
+  community.docker.docker_container:
+    name: "{{ item.container_name }}"
+    image: "{{ item.image }}"
+    state: started
+    ports:
+      - "{{ item.port }}"
+    recreate: yes
   when: >
     (inventory_hostname == groups['ec2_instances'][0] and item.container_name == 'container1') or
     (inventory_hostname == groups['ec2_instances'][1] and item.container_name == 'container2')
