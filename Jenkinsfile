@@ -53,9 +53,9 @@ stage('Notify Teams for Approval') {
       writeFile file: 'teams_payload.json', text: payload
 
       // Send the payload file with curl
-      sh """
-        curl -H 'Content-Type: application/json' --data @teams_payload.json ${teamsWebhookUrl}
-      """
+      sh 'curl -H 'Content-Type: application/json' --data @teams_payload.json ${teamsWebhookUrl}'
+        
+     
     }
   }
 }
