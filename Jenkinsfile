@@ -22,7 +22,7 @@ pipeline {
 
     stage('Terraform Init & Validate') {
       steps {
-        dir("terraform/${params.ENVIRONMENT}") {
+        dir("terraform/environments/${params.ENVIRONMENT}") {
           sh 'terraform init'
           sh 'terraform validate'
           sh 'terraform plan -out=tfplan'
@@ -32,7 +32,7 @@ pipeline {
 
     stage('Terraform Apply') {
       steps {
-        dir("terraform/${params.ENVIRONMENT}") {
+        dir("terraform/environments/${params.ENVIRONMENT}") {
           sh 'terraform apply -auto-approve tfplan'
         }
       }
@@ -41,7 +41,7 @@ pipeline {
     stage('Fetch EC2 Public IPs') {
       steps {
         script {
-          dir("terraform/${params.ENVIRONMENT}") {
+          dir("terraform/environments/${params.ENVIRONMENT}") {
             def ipsJson = sh(script: "terraform output -json ec2_instance_public_ips", returnStdout: true).trim()
             env.EC2_IPS_JSON = ipsJson
           }
