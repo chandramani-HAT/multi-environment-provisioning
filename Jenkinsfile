@@ -30,36 +30,36 @@ pipeline {
       }
     }
 
-    stage('Notify Teams for Approval') {
-      when {
-        expression { params.ENVIRONMENT == 'prod' }
-      }
-      steps {
-script {
-  def teamsWebhookUrl = credentials('teams-webhook-url')
+stage('Notify Teams for Approval') {
+  when {
+    expression { params.ENVIRONMENT == 'prod' }
+  }
+  steps {
+    script {
+      def teamsWebhookUrl = credentials('teams-webhook-url')
 
-  def message = [
-    '@type': 'MessageCard',
-    '@context': 'http://schema.org/extensions',
-    'summary': 'Deployment Approval Required',
-    'themeColor': '0076D7',
-    'title': "Approval Needed for PROD Deployment",
-    'text': "Please review and approve the Jenkins pipeline: ${env.BUILD_URL}"
-  ]
+      def message = [
+        '@type': 'MessageCard',
+        '@context': 'http://schema.org/extensions',
+        'summary': 'Deployment Approval Required',
+        'themeColor': '0076D7',
+        'title': "Approval Needed for PROD Deployment",
+        'text': "Please review and approve the Jenkins pipeline: ${env.BUILD_URL}"
+      ]
 
-  def payload = groovy.json.JsonOutput.toJson(message)
+      def payload = groovy.json.JsonOutput.toJson(message)
 
-  // Write JSON to a file
-  writeFile file: 'teams_payload.json', text: payload
+      // Write JSON payload to a file
+      writeFile file: 'teams_payload.json', text: payload
 
-  // Use curl to send the file contents
-  sh """
-    curl -H 'Content-Type: application/json' --data @teams_payload.json ${teamsWebhookUrl}
-  """
+      // Send the payload file with curl
+      sh """
+        curl -H 'Content-Type: application/json' --data @teams_payload.json ${teamsWebhookUrl}
+      """
+    }
+  }
 }
 
-      }
-    }
 
     stage('Approval for Production') {
       when {
