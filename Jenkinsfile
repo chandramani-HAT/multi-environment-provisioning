@@ -53,83 +53,81 @@ pipeline {
 stage('Generate Ansible Inventory') {
   steps {
     dir('ansible') {
-script {
-  def pemPublicKeyFile = "${env.PEM_FILE}.pub"
+      script {
+        // Parse the JSON string containing EC2 public IPs
+        def ips = readJSON text: env.EC2_IPS_JSON
 
-  sh """
-    mkdir -p ~/.ssh
-    if [ ! -f '${pemPublicKeyFile}' ]; then
-      ssh-keygen -y -f '${env.PEM_FILE}' > '${pemPublicKeyFile}'
-    fi
-  """
+        // Initialize inventory content with YAML structure
+        def inventoryContent = """all:
+  hosts:
+"""
 
-  ips.each { ip ->
-    sh """
-      for i in {1..30}; do
-        if ssh -o StrictHostKeyChecking=no -i '${env.PEM_FILE}' -o ConnectTimeout=5 ubuntu@${ip} 'echo SSH is up' 2>/dev/null; then
-          echo "SSH is ready on ${ip}"
-          break
-        fi
-        echo "Waiting for SSH on ${ip}..."
-        sleep 5
-      done
+        // Add each EC2 instance as a host with connection details
+        ips.eachWithIndex { ip, idx ->
+          def hostname = "ec2-${idx + 1}"
+          inventoryContent += """    ${hostname}:
+      ansible_host: ${ip}
+      ansible_user: ubuntu
+      ansible_ssh_private_key_file: ${env.PEM_FILE}
+"""
+        }
 
-      ssh-keygen -R ${ip} || true
-      ssh-copy-id -i '${pemPublicKeyFile}' -o StrictHostKeyChecking=no ubuntu@${ip}
-    """
-  }
-}
+        // Add a group 'ec2_instances' containing all hosts
+        inventoryContent += """  children:
+    ec2_instances:
+      hosts:
+"""
+        ips.eachWithIndex { ip, idx ->
+          def hostname = "ec2-${idx + 1}"
+          inventoryContent += "        ${hostname}: {}\n"
+        }
+
+        // Write the inventory content to a YAML file
+        writeFile file: 'inventory.yaml', text: inventoryContent
+
+        // Echo the generated inventory for debugging
+        echo "Generated ansible/inventory.yaml:\n${inventoryContent}"
       }
     }
+  }
 }
 
+stage('Establish Passwordless SSH') {
+  steps {
+    dir('ansible') {
+      script {
+        // Parse the JSON string into a list
+        def ips = readJSON text: env.EC2_IPS_JSON
 
-//     stage('Generate Ansible Inventory') {
-//       steps {
-//         dir('ansible') {
-//           script {
-//             def ips = readJSON text: env.EC2_IPS_JSON
-//             def inventoryContent = "all:\n  hosts:\n"
-//             ips.each { ip ->
-//               inventoryContent += "    ${ip}:\n      ansible_user: ubuntu\n      ansible_ssh_private_key_file: ${env.PEM_FILE}\n"
-//             }
-//             writeFile file: 'inventory.yaml', text: inventoryContent
-//           }
-//         }
-//   }
-// }
+        def pemPublicKeyFile = "${env.PEM_FILE}.pub"
 
-    stage('Establish Passwordless SSH') {
-      steps {
-        dir('ansible') {
-          script {
-            sh '''
-              mkdir -p ~/.ssh
-              if [ ! -f "$PEM_FILE.pub" ]; then
-                ssh-keygen -y -f $PEM_FILE > $PEM_FILE.pub
+        sh """
+          mkdir -p ~/.ssh
+          if [ ! -f '${pemPublicKeyFile}' ]; then
+            ssh-keygen -y -f '${env.PEM_FILE}' > '${pemPublicKeyFile}'
+          fi
+        """
+
+        ips.each { ip ->
+          sh """
+            for i in {1..30}; do
+              if ssh -o StrictHostKeyChecking=no -i '${env.PEM_FILE}' -o ConnectTimeout=5 ubuntu@${ip} 'echo SSH is up' 2>/dev/null; then
+                echo "SSH is ready on ${ip}"
+                break
               fi
-            '''
-            def ips = readJSON text: env.EC2_IPS_JSON
-            ips.each { ip ->
-              sh """
-                for i in {1..30}; do
-                  if ssh -o StrictHostKeyChecking=no -i $PEM_FILE -o ConnectTimeout=5 ubuntu@$ip 'echo SSH is up' 2>/dev/null; then
-                    echo "SSH is ready on $ip"
-                    break
-                  fi
-                  echo "Waiting for SSH on $ip..."
-                  sleep 5
-                done
-              """
-              sh """
-                ssh-keygen -R $ip || true
-                ssh-copy-id -i $PEM_FILE.pub -o StrictHostKeyChecking=no ubuntu@$ip
-              """
-            }
-          }
+              echo "Waiting for SSH on ${ip}..."
+              sleep 5
+            done
+
+            ssh-keygen -R ${ip} || true
+            ssh-copy-id -i '${pemPublicKeyFile}' -o StrictHostKeyChecking=no ubuntu@${ip}
+          """
         }
       }
     }
+  }
+}
+
 
     stage('Run Ansible Playbook') {
       steps {
