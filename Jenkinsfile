@@ -30,25 +30,60 @@ pipeline {
       }
     }
 
-stage('Approval for Production') {
-  when {
-    expression { params.ENVIRONMENT == 'prod' }
-  }
-  steps {
-    script {
-      def approved = input(
-        id: 'ApproveDeployment',
-        message: 'Approve deployment to PROD?',
-        parameters: [
-          booleanParam(defaultValue: false, description: 'Check to approve', name: 'Approve')
-        ]
-      )
-      if (!approved) {
-        error("Deployment to PROD not approved. Aborting pipeline.")
+    stage('Notify Teams for Approval') {
+      when {
+        expression { params.ENVIRONMENT == 'prod' }
+      }
+      steps {
+        script {
+          // Retrieve Teams webhook URL stored as Jenkins secret text credential
+          def teamsWebhookUrl = credentials('teams-webhook-url')
+
+          // Compose the Teams message card payload as a Groovy map
+          def message = [
+            '@type'      : 'MessageCard',
+            '@context'   : 'http://schema.org/extensions',
+            'summary'    : 'Deployment Approval Required',
+            'themeColor' : '0076D7',
+            'title'      : "Approval Needed for PROD Deployment",
+            'text'       : "Please review and approve the Jenkins pipeline: ${env.BUILD_URL}"
+          ]
+
+          // Convert the map to a JSON string
+          def payload = groovy.json.JsonOutput.toJson(message)
+
+          // Write JSON payload to a file to avoid shell quoting issues
+          writeFile file: 'teams_payload.json', text: payload
+
+          // Send the notification to Teams using curl with the payload file
+          sh """
+            curl -H 'Content-Type: application/json' --data @teams_payload.json ${teamsWebhookUrl}
+          """
+        }
       }
     }
-  }
-}
+
+    stage('Approval for Production') {
+      when {
+        expression { params.ENVIRONMENT == 'prod' }
+      }
+      steps {
+        script {
+          // Pause pipeline and wait for manual approval
+          def approved = input(
+            id: 'ApproveDeployment',
+            message: 'Approve deployment to PROD?',
+            parameters: [
+              booleanParam(defaultValue: false, description: 'Check to approve', name: 'Approve')
+            ]
+          )
+          if (!approved) {
+            error("Deployment to PROD not approved. Aborting pipeline.")
+          }
+        }
+      }
+    }
+
 
 
     stage('Terraform Apply') {
