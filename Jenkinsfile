@@ -53,44 +53,51 @@ pipeline {
 stage('Generate Ansible Inventory') {
   steps {
     dir('ansible') {
-      script {
-        // Parse the JSON string containing EC2 public IPs
-        def ips = readJSON text: env.EC2_IPS_JSON
+script {
+  def pemPublicKeyFile = "${env.PEM_FILE}.pub"
 
-        // Initialize inventory content with YAML structure
-        def inventoryContent = """all:
-  hosts:
-"""
+  sh """
+    mkdir -p ~/.ssh
+    if [ ! -f '${pemPublicKeyFile}' ]; then
+      ssh-keygen -y -f '${env.PEM_FILE}' > '${pemPublicKeyFile}'
+    fi
+  """
 
-        // Add each EC2 instance as a host with connection details
-        ips.eachWithIndex { ip, idx ->
-          def hostname = "ec2-${idx + 1}"
-          inventoryContent += """    ${hostname}:
-      ansible_host: ${ip}
-      ansible_user: ubuntu
-      ansible_ssh_private_key_file: ${env.PEM_FILE}
-"""
-        }
+  ips.each { ip ->
+    sh """
+      for i in {1..30}; do
+        if ssh -o StrictHostKeyChecking=no -i '${env.PEM_FILE}' -o ConnectTimeout=5 ubuntu@${ip} 'echo SSH is up' 2>/dev/null; then
+          echo "SSH is ready on ${ip}"
+          break
+        fi
+        echo "Waiting for SSH on ${ip}..."
+        sleep 5
+      done
 
-        // Add a group 'ec2_instances' containing all hosts
-        inventoryContent += """  children:
-    ec2_instances:
-      hosts:
-"""
-        ips.eachWithIndex { ip, idx ->
-          def hostname = "ec2-${idx + 1}"
-          inventoryContent += "        ${hostname}: {}\n"
-        }
-
-        // Write the inventory content to a YAML file
-        writeFile file: 'inventory.yaml', text: inventoryContent
-
-        // Echo the generated inventory for debugging
-        echo "Generated ansible/inventory.yaml:\n${inventoryContent}"
-      }
-    }
+      ssh-keygen -R ${ip} || true
+      ssh-copy-id -i '${pemPublicKeyFile}' -o StrictHostKeyChecking=no ubuntu@${ip}
+    """
   }
 }
+      }
+    }
+}
+
+
+//     stage('Generate Ansible Inventory') {
+//       steps {
+//         dir('ansible') {
+//           script {
+//             def ips = readJSON text: env.EC2_IPS_JSON
+//             def inventoryContent = "all:\n  hosts:\n"
+//             ips.each { ip ->
+//               inventoryContent += "    ${ip}:\n      ansible_user: ubuntu\n      ansible_ssh_private_key_file: ${env.PEM_FILE}\n"
+//             }
+//             writeFile file: 'inventory.yaml', text: inventoryContent
+//           }
+//         }
+//   }
+// }
 
     stage('Establish Passwordless SSH') {
       steps {
