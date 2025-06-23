@@ -36,7 +36,7 @@ stage('Notify Teams for Approval') {
   }
   steps {
     script {
-      def teamsWebhookUrl = credentials('teams-webhook-url') // Store webhook URL securely in Jenkins credentials
+      def teamsWebhookUrl = credentials('teams-webhook-url') // Jenkins secret text credential
 
       def message = [
         '@type': 'MessageCard',
@@ -49,12 +49,17 @@ stage('Notify Teams for Approval') {
 
       def payload = groovy.json.JsonOutput.toJson(message)
 
+      // Write JSON payload to a file
+      writeFile file: 'teams_payload.json', text: payload
+
+      // Use curl to send the payload file
       sh """
-        curl -H 'Content-Type: application/json' -d '${payload}' ${teamsWebhookUrl}
+        curl -H 'Content-Type: application/json' --data @teams_payload.json ${teamsWebhookUrl}
       """
     }
   }
 }
+
 
 
 
