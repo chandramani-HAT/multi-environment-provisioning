@@ -30,37 +30,25 @@ pipeline {
       }
     }
 
-stage('Notify Teams for Approval') {
+stage('Approval for Production') {
   when {
     expression { params.ENVIRONMENT == 'prod' }
   }
   steps {
     script {
-      def teamsWebhookUrl = credentials('teams-webhook-url') // Jenkins secret text credential
-
-      def message = [
-        '@type': 'MessageCard',
-        '@context': 'http://schema.org/extensions',
-        'summary': 'Deployment Approval Required',
-        'themeColor': '0076D7',
-        'title': "Approval Needed for PROD Deployment",
-        'text': "Please review and approve the Jenkins pipeline: ${env.BUILD_URL}"
-      ]
-
-      def payload = groovy.json.JsonOutput.toJson(message)
-
-      // Write JSON payload to a file
-      writeFile file: 'teams_payload.json', text: payload
-
-      // Use curl to send the payload file
-      sh """
-        curl -H 'Content-Type: application/json' --data @teams_payload.json ${teamsWebhookUrl}
-      """
+      def approved = input(
+        id: 'ApproveDeployment',
+        message: 'Approve deployment to PROD?',
+        parameters: [
+          booleanParam(defaultValue: false, description: 'Check to approve', name: 'Approve')
+        ]
+      )
+      if (!approved) {
+        error("Deployment to PROD not approved. Aborting pipeline.")
+      }
     }
   }
 }
-
-
 
 
     stage('Terraform Apply') {
