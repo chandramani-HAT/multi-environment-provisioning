@@ -30,6 +30,27 @@ pipeline {
       }
     }
 
+stage('Approval for Production') {
+  when {
+    expression { params.ENVIRONMENT == 'prod' }
+  }
+  steps {
+    script {
+      def approved = input(
+        id: 'ApproveDeployment',
+        message: 'Approve deployment to PROD?',
+        parameters: [
+          booleanParam(defaultValue: false, description: 'Check to approve', name: 'Approve')
+        ]
+      )
+      if (!approved) {
+        error("Deployment to PROD not approved. Aborting pipeline.")
+      }
+    }
+  }
+}
+
+
     stage('Terraform Apply') {
       steps {
         dir("terraform/environments/${params.ENVIRONMENT}") {
