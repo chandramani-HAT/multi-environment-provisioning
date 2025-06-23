@@ -13,7 +13,7 @@ pipeline {
     stage('Checkout') {
       steps {
         git(
-          branch: 'main',
+          branch: 'new',
           credentialsId: 'github-repo',
           url: 'https://github.com/chandramani-HAT/multi-environment-provisioning.git'
         )
