@@ -71,16 +71,6 @@
   loop: "{{ docker_images }}"
 
 
-
-- name: Run Docker containers conditionally based on inventory hostname
-  shell: |
-    docker run -d --name {{ item.container_name }} -p {{ item.port }} {{ item.image }}
-  when: >
-    (inventory_hostname == groups['ec2_instances'][0] and item.container_name == 'container1') or
-    (inventory_hostname == groups['ec2_instances'][1] and item.container_name == 'container2')
-  loop: "{{ docker_images }}"
-
-
 - name: Ensure Docker containers are running with latest image
   community.docker.docker_container:
     name: "{{ item.container_name }}"
