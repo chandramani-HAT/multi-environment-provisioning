@@ -90,6 +90,7 @@ README.md
 - Add your PEM private key as a **Secret File** credential in Jenkins (e.g., ID: `terraform_ansible.pem`).
 - Add your GitHub token as **Username and Password** credential (e.g., ID: `github-repo`).
 - Jenkins `Pipeline Utility Steps` Plugin install on jenkins console.
+- Add the teams webhook url **Username and Password** credential (e.g., ID: `teams-webhook-urlgit add`).
 - These credentials are injected securely into the pipeline.
 
 ### 2. Terraform Infrastructure Provisioning
