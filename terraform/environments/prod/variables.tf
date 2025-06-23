@@ -13,13 +13,13 @@ variable "vpc_cidr" {
 variable "vpc_name" {
   description = "Name tag for the VPC"
   type        = string
-  default     = "stage-vpc"
+  default     = "prod-vpc"
 }
 
 variable "environment" {
   description = "Environment tag (prod, staging, dev)"
   type        = string
-  default     = "stage"
+  default     = "prod"
 }
 
 variable "owner" {
