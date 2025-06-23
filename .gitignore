@@ -1,0 +1,39 @@
+# Ignore all .terraform directories recursively in environments (dev, prod, stage)
+terraform/environments/**/.terraform/
+terraform/environments/**/.terraform.lock.hcl
+# Ignore Terraform state files and backups anywhere inside environments
+terraform/environments/**/*.tfstate
+terraform/environments/**/*.tfstate.backup
+terraform/**/.terraform.lock.hcl
+# Ignore crash logs
+crash.log
+
+# Ignore override files (local overrides)
+terraform/environments/**/*.tfvars
+terraform/environments/**/*.tfvars.json
+terraform/environments/**/override.tf
+terraform/environments/**/override.tf.json
+terraform/environments/**/*_override.tf
+terraform/environments/**/*_override.tf.json
+
+
+# Ignore terraform CLI config files
+terraform/environments/**/.terraformrc
+terraform/environments/**/terraform.rc
+
+# Ignore terraform plan output files
+terraform/environments/**/*.tfplan
+
+# Optional: Ignore terraform lock files if you do NOT want to commit them
+# (Recommended to commit for consistency)
+# terraform/environments/**/.terraform.lock.hcl
+
+# Ignore editor and OS files globally
+*.swp
+*.swo
+*~
+*.bak
+*.backup
+.DS_Store
+.vscode/
+.idea/

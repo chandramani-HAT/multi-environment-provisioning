@@ -1,0 +1,7 @@
+docker_images:
+  - image: "028892270743.dkr.ecr.us-east-1.amazonaws.com/apache:latest"
+    container_name: "container1"
+    port: "80:80"
+  - image: "028892270743.dkr.ecr.us-east-1.amazonaws.com/nginx:latest"
+    container_name: "container2"
+    port: "80:80"

@@ -1,0 +1,6 @@
+---
+- name: Configure EC2 instances with Docker and AWS CLI, deploy containers
+  hosts: ec2_instances
+  become: yes
+  roles:
+    - ec2_setup

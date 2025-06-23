@@ -1,0 +1,15 @@
+all:
+  hosts:
+    ec2-1:
+      ansible_host: <first_ec2_public_ip>
+      ansible_user: ubuntu
+      ansible_ssh_private_key_file: /path/to/your/private_key.pem
+    ec2-2:
+      ansible_host: <second_ec2_public_ip>
+      ansible_user: ubuntu
+      ansible_ssh_private_key_file: /path/to/your/private_key.pem
+  children:
+    ec2_instances:
+      hosts:
+        ec2-1: {}
+        ec2-2: {}
