@@ -36,30 +36,31 @@ This repository implements a complete CI/CD pipeline to provision AWS infrastruc
 ---
 
 ## Repository Structure
-
+```
 terraform/
-├──environments
-|    |
-|    ├── dev/
-|    │ ├── main.tf
-|    │ ├── variables.tf
-|    │ └── backend.tf
-|    ├── stage/
-|    │ ├── main.tf
-|    │ ├── variables.tf
-|    │ └── backend.tf
-|    └── prod/
-|    ├── main.tf
-|    ├── variables.tf
-|    └── backend.tf
-└─────modules
+├── environments
+│   ├── dev/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── backend.tf
+│   ├── stage/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── backend.tf
+│   └── prod/
+│       ├── main.tf
+│       ├── variables.tf
+│       └── backend.tf
+└── modules
+
 ansible/
 ├── inventory.yaml (dynamically generated)
-└── playbooks.yaml
+├── playbooks.yaml
 └── roles/
+
 Jenkinsfile
 README.md
-
+```
 
 - Each environment folder (`dev`, `stage`, `prod`) contains environment-specific Terraform files.
 - `backend.tf` configures remote state backend (e.g., S3 bucket with locking) per environment.
