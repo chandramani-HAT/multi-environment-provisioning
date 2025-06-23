@@ -50,37 +50,47 @@ pipeline {
       }
     }
 
-    stage('Generate Ansible Inventory') {
-      steps {
-        dir('ansible') {
-          script {
-            def ips = readJSON text: env.EC2_IPS_JSON
-            def inventoryContent = """all:
+stage('Generate Ansible Inventory') {
+  steps {
+    dir('ansible') {
+      script {
+        // Parse the JSON string containing EC2 public IPs
+        def ips = readJSON text: env.EC2_IPS_JSON
+
+        // Initialize inventory content with YAML structure
+        def inventoryContent = """all:
   hosts:
 """
-            ips.eachWithIndex { ip, idx ->
-              def hostname = "ec2-${idx+1}"
-              inventoryContent += """    ${hostname}:
+
+        // Add each EC2 instance as a host with connection details
+        ips.eachWithIndex { ip, idx ->
+          def hostname = "ec2-${idx + 1}"
+          inventoryContent += """    ${hostname}:
       ansible_host: ${ip}
       ansible_user: ubuntu
       ansible_ssh_private_key_file: ${env.PEM_FILE}
 """
-            }
-            inventoryContent += """  children:
+        }
+
+        // Add a group 'ec2_instances' containing all hosts
+        inventoryContent += """  children:
     ec2_instances:
       hosts:
 """
-            ips.eachWithIndex { ip, idx ->
-              def hostname = "ec2-${idx+1}"
-              inventoryContent += "        ${hostname}: {}\n"
-            }
-
-            writeFile file: 'inventory.yaml', text: inventoryContent
-            echo "Generated ansible/inventory.yaml:\n${inventoryContent}"
-          }
+        ips.eachWithIndex { ip, idx ->
+          def hostname = "ec2-${idx + 1}"
+          inventoryContent += "        ${hostname}: {}\n"
         }
+
+        // Write the inventory content to a YAML file
+        writeFile file: 'inventory.yaml', text: inventoryContent
+
+        // Echo the generated inventory for debugging
+        echo "Generated ansible/inventory.yaml:\n${inventoryContent}"
       }
     }
+  }
+}
 
     stage('Establish Passwordless SSH') {
       steps {
