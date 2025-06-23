@@ -68,9 +68,14 @@
   shell: |
     if docker ps -a --format '{{.Names}}' | grep -w {{ item.container_name }}; then
       docker rm -f {{ item.container_name }}
+      echo "removed"
+    else
+      echo "not found"
     fi
+  register: container_remove_result
+  changed_when: "'removed' in container_remove_result.stdout"
   loop: "{{ docker_images }}"
-  ignore_errors: yes
+
 
 - name: Run Docker containers conditionally based on inventory hostname
   shell: |
